@@ -1,9 +1,14 @@
 const express = require("express");
 const path = require("path");
 const helmet = require("helmet");
+const mysql = require("mysql2")
 const db = require("./config/database");
 
+const userRoutes = require("./routes/user");
+
 const app = express();
+
+app.use(helmet.crossOriginResourcePolicy({ policy: "same-site" }));
 
 // add headers for requests
 app.use((req, res, next) => {
@@ -23,6 +28,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
+app.use('/api/user', userRoutes);
 
 app.use("/images", express.static(path.join(__dirname, "images")));
 
