@@ -152,3 +152,17 @@ exports.getOneUser = (req, res, next) => {
     }
   });
 };
+
+exports.getAllUsers = (req, res, next) => {
+  const findUsers =
+    "SELECT id_user, firstname, lastname, is_admin FROM Users ORDER BY lastname ASC";
+  db.query(findUsers, function (err, results) {
+    if (err) {
+      return res
+        .status(httpStatus.INTERNAL_SERVER_ERROR)
+        .json({ message: error });
+    } else {
+      return res.status(httpStatus.OK).json({ users: results });
+    }
+  });
+};
