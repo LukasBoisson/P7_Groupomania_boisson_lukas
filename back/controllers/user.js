@@ -120,3 +120,19 @@ exports.login = (req, res, next) => {
     }
   });
 };
+
+exports.deleteUser = (req, res, next) => {
+  // penser à supprimer les images liés à l'utilisateur
+  const userId = req.params.id_user;
+  const deleteUser = "DELETE FROM Users WHERE id_user= ?";
+  const value = [userId];
+  db.query(deleteUser, value, (error, result) => {
+    if (error) {
+      return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({});
+    } else {
+      return res
+        .status(httpStatus.OK)
+        .json({ message: "Le compte a été supprimé" });
+    }
+  });
+};

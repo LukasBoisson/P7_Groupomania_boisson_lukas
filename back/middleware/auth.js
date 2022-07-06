@@ -8,9 +8,9 @@ module.exports = (req, res, next) => {
     // (0 = bearer, 1 = token)
     const token = req.headers.authorization.split(" ")[1];
     const decodedToken = jwt.verify(token, process.env.PRIVATE_KEY_JWT);
-    const userId = decodedToken.userId;
-    req.auth = { userId };
-    if (req.body.userId && req.body.userId !== userId) {
+    const userId = decodedToken.id_user;
+    req.auth = { id_user };
+    if (req.body.id_user && req.body.id_user !== id_user) {
       throw "Invalid user ID";
     } else {
       next();
