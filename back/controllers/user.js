@@ -66,6 +66,7 @@ exports.signup = (req, res, next) => {
     );
 };
 
+//PROBLEME BCRYPT !!!!!!!!
 exports.login = (req, res, next) => {
   const email = req.body.email;
   const password = req.body.password;
@@ -114,7 +115,7 @@ exports.login = (req, res, next) => {
           .catch((error) =>
             res
               .status(httpStatus.INTERNAL_SERVER_ERROR)
-              .json({ message: "erreur dans la comparaison avec bcrypt " })
+              .json({ message: "erreur avec bcrypt " })
           );
       });
     }
@@ -163,6 +164,25 @@ exports.getAllUsers = (req, res, next) => {
         .json({ message: error });
     } else {
       return res.status(httpStatus.OK).json({ users: results });
+    }
+  });
+};
+
+//PROFIL DEFINI COMME MODIFIÉ MAIS FIRSTNAME ET LASTNAME UNDEFINED !!!!!!!!
+exports.modifyUser = (req, res, next) => {
+  //recuperer les infos de l'utilisateur par son id
+  const userId = req.params.id_user;
+  const updateProfile =
+    "UPDATE Users SET firstname=?, lastname=? WHERE id_user=?";
+  value = [userId.firstname, userId.lastname, userId];
+  db.query(updateProfile, value, function (err, result) {
+    if (err) {
+      return res
+        .status(httpStatus.NOT_FOUND)
+        .json({ message: "Utilisateur non trouvé " });
+    } else {
+      console.log(value);
+      return res.status(httpStatus.OK).json({ message: "Profil modifié" });
     }
   });
 };
