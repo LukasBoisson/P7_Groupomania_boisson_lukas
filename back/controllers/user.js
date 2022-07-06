@@ -136,3 +136,19 @@ exports.deleteUser = (req, res, next) => {
     }
   });
 };
+
+exports.getOneUser = (req, res, next) => {
+  const userId = req.params.id_user;
+  const findUser =
+    "SELECT id_user, firstname, lastname, is_admin FROM Users WHERE id_user= ?";
+  const value = [userId];
+  db.query(findUser, value, function (err, results) {
+    if (err) {
+      return res
+        .status(httpStatus.NOT_FOUND)
+        .json({ message: "Utilisateur non trouvé " });
+    } else {
+      return res.status(httpStatus.OK).json({ user: results[0] });
+    }
+  });
+};
