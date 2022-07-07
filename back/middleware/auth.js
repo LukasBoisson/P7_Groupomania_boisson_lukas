@@ -8,16 +8,14 @@ module.exports = (req, res, next) => {
     // (0 = bearer, 1 = token)
     const token = req.headers.authorization.split(" ")[1];
     const decodedToken = jwt.verify(token, process.env.PRIVATE_KEY_JWT);
-    const userId = decodedToken.id_user;
-    req.auth = { id_user };
-    if (req.body.id_user && req.body.id_user !== id_user) {
+    const userId = decodedToken.id;
+    if (req.body.id && req.body.id !== userId) {
       throw "Invalid user ID";
     } else {
       next();
     }
   } catch (error) {
     res.status(httpStatus.FORBIDDEN).json({
-      error,
       message: "Need to login first",
     });
   }
