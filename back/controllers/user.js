@@ -4,6 +4,7 @@ const dotenv = require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const httpStatus = require("http-status");
+const e = require("express");
 
 const emailRegExp =
   /^([A-Za-z\d\.-]+)@([A-Za-z\d-]+)\.([A-Za-z]{2,6})(\.[A-Za-z]{2,6})?$/;
@@ -18,11 +19,11 @@ exports.signup = (req, res, next) => {
     return res
       .status(httpStatus.BAD_REQUEST)
       .json({ message: "Les champs doivent tous être remplis" });
-  } /* else if (!emailRegExp.test(req.body.email)) {
+  } else if (!emailRegExp.test(req.body.email)) {
     return res
       .status(httpStatus.BAD_REQUEST)
       .json({ message: "Le format de l'email est incorrect" });
-  }*/
+  }
   bcrypt
     .hash(req.body.password, 10)
     .then((hash) => {
@@ -33,7 +34,7 @@ exports.signup = (req, res, next) => {
       const isAdmin = req.body.is_admin;
 
       db.query(
-        "SELECT * FROM Users WHERE email= ?",
+        "SELECT * FROM Users WHERE email= ?;",
         [email],
         function (err, result) {
           if (result.length > 0) {
@@ -42,9 +43,9 @@ exports.signup = (req, res, next) => {
               .json({ message: "L'email est déjà utilisé" });
           } else {
             const createUser =
-              "INSERT INTO Users (firstname, lastname, email, password, is_admin) VALUES (?,?,?,?,?)";
-            const values = [firstname, lastname, email, password, isAdmin];
-            db.query(createUser, values, function (err, result) {
+              "INSERT INTO Users (firstname, lastname, email, password, is_admin) VALUES (?,?,?,?,?);";
+            const queryParam = [firstname, lastname, email, password, isAdmin];
+            db.query(createUser, queryParam, function (err, result) {
               if (err) {
                 return res
                   .status(httpStatus.BAD_REQUEST)
@@ -66,70 +67,61 @@ exports.signup = (req, res, next) => {
     );
 };
 
-//PROBLEME BCRYPT !!!!!!!!
 exports.login = (req, res, next) => {
-  const email = req.body.email;
-  const password = req.body.password;
+  const emailInput = req.body.email;
+  const passwordInput = req.body.password;
+
+  if (!emailInput || !passwordInput)
+    return res
+      .status(httpStatus.UNAUTHORIZED)
+      .json({ message: "Paramètres manquants" });
+
   //chercher si un utilisateur avec l'email existe
-  const ifEmailExistInDb = "SELECT id_user, email FROM Users WHERE email= ?";
-  const value = [email];
-  db.query(ifEmailExistInDb, value, (err, result) => {
-    if (result.length === 0) {
-      // si non :
-      return res.status(httpStatus.UNAUTHORIZED).json({
-        error,
-        message: "Aucun utilisateur n'est inscrit avec cet email",
+  const selectUserFromDb =
+    "SELECT id, email, password FROM Users WHERE email= ?;";
+  const queryParam = [emailInput];
+  db.query(selectUserFromDb, queryParam, (err, userFromDb) => {
+    if (!userFromDb.length)
+      return res
+        .status(httpStatus.UNAUTHORIZED)
+        .json({ message: "Utilisateur non trouvé" });
+
+    const userRetrieved = userFromDb.pop();
+
+    bcrypt
+      .compare(passwordInput, userRetrieved.password)
+      .then((valid) => {
+        if (!valid)
+          return res
+            .status(httpStatus.UNAUTHORIZED)
+            .json({ error: "Le mot de passe est incorrect!" });
+        // si password valide :
+        return res.status(httpStatus.OK).json({
+          id: userRetrieved.id,
+          token: jwt.sign(
+            { id: userRetrieved.id },
+            process.env.PRIVATE_KEY_JWT,
+            { expiresIn: "24h" }
+          ),
+        });
+      })
+      .catch((error) => {
+        console.log(error);
+        return res
+          .status(httpStatus.INTERNAL_SERVER_ERROR)
+          .json({ message: "erreur avec bcrypt" });
       });
-    } else {
-      // si oui : recupérer le password de la requete et le comparer au password de l'utilisateur associé à l'email
-      const getUserPassword = "SELECT password FROM Users WHERE email=?";
-      const value = [email];
-      db.query(getUserPassword, value, function (err, result) {
-        bcrypt
-          .compare(password, result)
-          .then((valid) => {
-            if (!valid) {
-              console.log(!valid);
-              // si password invalide :
-              return res
-                .status(httpStatus.UNAUTHORIZED)
-                .json({ error: "Le mot de passe est incorrect!" });
-            } else {
-              // si password valide :
-              const getUserId = "SELECT id_user FROM Users WHERE email=?";
-              const getUserEmail = [email];
-              db.query(getUserId, getUserEmail, function (err, result) {
-                return res.status(httpStatus.OK).json({
-                  id_user: getUserId,
-                  token: jwt.sign(
-                    { userId: getUserId },
-                    process.env.PRIVATE_KEY_JWT,
-                    {
-                      expiresIn: "24h",
-                    }
-                  ),
-                });
-              });
-            }
-          })
-          .catch((error) =>
-            res
-              .status(httpStatus.INTERNAL_SERVER_ERROR)
-              .json({ message: "erreur avec bcrypt " })
-          );
-      });
-    }
   });
 };
 
 exports.deleteUser = (req, res, next) => {
   // penser à supprimer les images liés à l'utilisateur
-  const userId = req.params.id_user;
-  const deleteUser = "DELETE FROM Users WHERE id_user= ?";
-  const value = [userId];
-  db.query(deleteUser, value, (error, result) => {
+  const userId = req.params.id;
+  const deleteUser = "DELETE FROM Users WHERE id= ?;";
+  const queryParam = [userId];
+  db.query(deleteUser, queryParam, (error, result) => {
     if (error) {
-      return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({});
+      return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ error });
     } else {
       return res
         .status(httpStatus.OK)
@@ -139,11 +131,11 @@ exports.deleteUser = (req, res, next) => {
 };
 
 exports.getOneUser = (req, res, next) => {
-  const userId = req.params.id_user;
+  const userId = req.params.id;
   const findUser =
-    "SELECT id_user, firstname, lastname, is_admin FROM Users WHERE id_user= ?";
-  const value = [userId];
-  db.query(findUser, value, function (err, results) {
+    "SELECT id, firstname, lastname, is_admin FROM Users WHERE id= ?;";
+  const queryParam = [userId];
+  db.query(findUser, queryParam, function (err, results) {
     if (err) {
       return res
         .status(httpStatus.NOT_FOUND)
@@ -156,7 +148,7 @@ exports.getOneUser = (req, res, next) => {
 
 exports.getAllUsers = (req, res, next) => {
   const findUsers =
-    "SELECT id_user, firstname, lastname, is_admin FROM Users ORDER BY lastname ASC";
+    "SELECT id, firstname, lastname, is_admin FROM Users ORDER BY lastname ASC;";
   db.query(findUsers, function (err, results) {
     if (err) {
       return res
@@ -168,20 +160,26 @@ exports.getAllUsers = (req, res, next) => {
   });
 };
 
-//PROFIL DEFINI COMME MODIFIÉ MAIS FIRSTNAME ET LASTNAME UNDEFINED !!!!!!!!
 exports.modifyUser = (req, res, next) => {
   //recuperer les infos de l'utilisateur par son id
-  const userId = req.params.id_user;
-  const updateProfile =
-    "UPDATE Users SET firstname=?, lastname=? WHERE id_user=?";
-  value = [userId.firstname, userId.lastname, userId];
-  db.query(updateProfile, value, function (err, result) {
+  const userId = req.params.id;
+  const firstname = req.body.firstname;
+  const lastname = req.body.lastname;
+
+  if (!firstname || !lastname) {
+    return res
+      .status(httpStatus.UNAUTHORIZED)
+      .json({ message: "Paramètres manquants" });
+  }
+  const updateProfile = "UPDATE Users SET firstname=?, lastname=? WHERE id=?;";
+  const queryParam = [firstname, lastname, userId];
+
+  db.query(updateProfile, queryParam, function (err, result) {
     if (err) {
       return res
         .status(httpStatus.NOT_FOUND)
         .json({ message: "Utilisateur non trouvé " });
     } else {
-      console.log(value);
       return res.status(httpStatus.OK).json({ message: "Profil modifié" });
     }
   });
