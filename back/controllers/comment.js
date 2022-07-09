@@ -4,7 +4,7 @@ const httpStatus = require("http-status");
 
 exports.createComment = async (req, res, next) => {
   const id_user = req.body.id;
-  const id_post = req.params.id;
+  const id_post = req.params.id_post;
   const selectUserFromDb = "SELECT firstname, lastname FROM Users WHERE id= ?;";
   const queryId = id_user;
   db.query(
@@ -86,6 +86,20 @@ exports.deleteComment = (req, res, next) => {
       return res
         .status(httpStatus.OK)
         .json({ message: "Le commentaire a été supprimé" });
+    }
+  });
+};
+
+exports.getAllComments = (req, res, next) => {
+  const postId = req.params.id_post;
+  const findComments =
+    "SELECT * FROM `Comments` WHERE id_post=? ORDER BY date DESC;";
+  const queryParam = postId;
+  db.query(findComments, queryParam, function (err, allComments) {
+    if (err) {
+      return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ error });
+    } else {
+      return res.status(httpStatus.OK).json({ comments: allComments });
     }
   });
 };
