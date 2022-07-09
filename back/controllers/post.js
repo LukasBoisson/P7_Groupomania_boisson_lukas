@@ -4,7 +4,6 @@ const dotenv = require("dotenv").config();
 const httpStatus = require("http-status");
 const fs = require("fs");
 const multer = require("../middleware/multer-config");
-const { error } = require("console");
 
 exports.createPost = async (req, res, next) => {
   // récuperer l'id de l'utilisateur
@@ -86,9 +85,9 @@ exports.modifyPost = async (req, res, next) => {
 
 exports.deletePost = (req, res, next) => {
   const userId = req.body.id;
-  console.log(userId);
+
   const postId = req.params.id;
-  console.log(postId);
+
   const selectUserFromDb = "SELECT id_user FROM Posts WHERE id= ?;";
   const queryId = postId;
   db.query(selectUserFromDb, queryId, (error, postUserId) => {
@@ -131,6 +130,17 @@ exports.deletePost = (req, res, next) => {
         message:
           "impossible de supprimer un post créé par un autre utilisateur",
       });
+    }
+  });
+};
+
+exports.getAllPosts = (req, res, next) => {
+  const findPosts = "SELECT * FROM Posts ORDER BY date DESC;";
+  db.query(findPosts, function (err, allPosts) {
+    if (err) {
+      return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ error });
+    } else {
+      return res.status(httpStatus.OK).json({ posts: allPosts });
     }
   });
 };
