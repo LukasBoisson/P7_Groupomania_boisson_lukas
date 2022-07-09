@@ -72,3 +72,20 @@ exports.modifyComment = async (req, res, next) => {
     }
   );
 };
+
+exports.deleteComment = (req, res, next) => {
+  const commentId = req.params.id;
+  const deleteComment = "DELETE FROM Comments WHERE id= ?;";
+  const queryParam = [commentId];
+  db.query(deleteComment, queryParam, (error, result) => {
+    if (error) {
+      return res
+        .status(httpStatus.INTERNAL_SERVER_ERROR)
+        .json({ error: error.sqlMessage });
+    } else {
+      return res
+        .status(httpStatus.OK)
+        .json({ message: "Le commentaire a été supprimé" });
+    }
+  });
+};
