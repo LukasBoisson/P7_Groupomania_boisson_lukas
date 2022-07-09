@@ -4,6 +4,7 @@ const dotenv = require("dotenv").config();
 const httpStatus = require("http-status");
 const fs = require("fs");
 const multer = require("../middleware/multer-config");
+const { error } = require("console");
 
 exports.createPost = async (req, res, next) => {
   // récuperer l'id de l'utilisateur
@@ -81,4 +82,58 @@ exports.modifyPost = async (req, res, next) => {
       }
     }
   );
+};
+
+exports.deletePost = (req, res, next) => {
+  const userId = req.body.id;
+  console.log(userId);
+  const postId = req.params.id;
+  console.log(postId);
+  const selectUserFromDb = "SELECT id_user FROM Posts WHERE id= ?;";
+  const queryId = postId;
+  db.query(selectUserFromDb, queryId, function (error, postUserId) {
+    if (userId === postUserId[0].id_user) {
+      // rechercher si image attachée au post
+      const imageToDelete = "SELECT * FROM Posts WHERE id= ?;";
+      const queryParam = [postId];
+      db.query(imageToDelete, queryParam, (error, postData) => {
+        if (error) {
+          return res.status(500).json({ error: error.sqlMessage });
+        } else if (postData[0].message) {
+          const oldImg = postData[0].message;
+          const oldFile = oldImg.split("/images/")[1];
+          fs.unlink(`images/${oldFile}`, (error) => {
+            if (error) {
+              return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+                error,
+                message: "erreur lors de la suppression de l'image",
+              });
+            } else {
+              return res
+                .status(httpStatus.OK)
+                .json({ message: "image supprimée" });
+            }
+          });
+        }
+      });
+
+      const deletePost = "DELETE FROM Posts WHERE id= ?;";
+      db.query(deletePost, queryParam, (error, result) => {
+        if (error) {
+          return res
+            .status(httpStatus.INTERNAL_SERVER_ERROR)
+            .json({ message: "erreur lors de la suppression du post" });
+        } else {
+          return res
+            .status(httpStatus.OK)
+            .json({ message: "Le post a été supprimé" });
+        }
+      });
+    } else {
+      return res.status(httpStatus.UNAUTHORIZED).json({
+        message:
+          "impossible de supprimer un post créé par un autre utilisateur",
+      });
+    }
+  });
 };
