@@ -15,5 +15,7 @@ router.get("/", auth, multer, postCtrl.getAllPosts);
 
 /* COMMENT */
 router.post("/:id/comment", auth, multer, commentCtrl.createComment);
+// id post / comment / id comment
+router.put("/:id_post/comment/:id", auth, multer, commentCtrl.modifyComment);
 
 module.exports = router;
