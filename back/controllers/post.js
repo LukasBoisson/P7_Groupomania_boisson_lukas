@@ -91,7 +91,7 @@ exports.deletePost = (req, res, next) => {
   console.log(postId);
   const selectUserFromDb = "SELECT id_user FROM Posts WHERE id= ?;";
   const queryId = postId;
-  db.query(selectUserFromDb, queryId, function (error, postUserId) {
+  db.query(selectUserFromDb, queryId, (error, postUserId) => {
     if (userId === postUserId[0].id_user) {
       // rechercher si image attachée au post
       const imageToDelete = "SELECT * FROM Posts WHERE id= ?;";
@@ -99,7 +99,7 @@ exports.deletePost = (req, res, next) => {
       db.query(imageToDelete, queryParam, (error, postData) => {
         if (error) {
           return res.status(500).json({ error: error.sqlMessage });
-        } else if (postData[0].message) {
+        } else {
           const oldImg = postData[0].message;
           const oldFile = oldImg.split("/images/")[1];
           fs.unlink(`images/${oldFile}`, (error) => {
@@ -109,28 +109,25 @@ exports.deletePost = (req, res, next) => {
                 message: "erreur lors de la suppression de l'image",
               });
             } else {
+              const deletePost = "DELETE FROM Posts WHERE id= ?;";
+              db.query(deletePost, queryParam, (error, result) => {
+                if (error) {
+                  return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+                    error,
+                    message: "erreur lors de la suppression du post",
+                  });
+                }
+              });
               return res
                 .status(httpStatus.OK)
-                .json({ message: "image supprimée" });
+                .json({ message: "Le post et l'image ont été supprimés" });
             }
           });
         }
       });
-
-      const deletePost = "DELETE FROM Posts WHERE id= ?;";
-      db.query(deletePost, queryParam, (error, result) => {
-        if (error) {
-          return res
-            .status(httpStatus.INTERNAL_SERVER_ERROR)
-            .json({ message: "erreur lors de la suppression du post" });
-        } else {
-          return res
-            .status(httpStatus.OK)
-            .json({ message: "Le post a été supprimé" });
-        }
-      });
     } else {
       return res.status(httpStatus.UNAUTHORIZED).json({
+        error,
         message:
           "impossible de supprimer un post créé par un autre utilisateur",
       });
