@@ -5,6 +5,7 @@ const mysql = require("mysql2");
 const db = require("./config/database");
 
 const userRoutes = require("./routes/user");
+const postRoutes = require("./routes/post");
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 app.use("/api/user", userRoutes);
+app.use("/api/post", postRoutes);
 
 app.use("/images", express.static(path.join(__dirname, "images")));
 
