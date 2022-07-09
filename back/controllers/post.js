@@ -44,3 +44,41 @@ exports.createPost = async (req, res, next) => {
     }
   );
 };
+
+exports.modifyPost = async (req, res, next) => {
+  const userId = req.body.id;
+  const postId = req.params.id;
+  const selectUserFromDb = "SELECT id_user FROM Posts WHERE id= ?;";
+  const queryId = postId;
+  db.query(
+    selectUserFromDb,
+    queryId,
+    await function (error, postUserId) {
+      if (userId === postUserId[0].id_user) {
+        let message = req.body.message;
+
+        if (req.file) {
+          message = `${req.protocol}://${req.get("host")}/images/${
+            req.file.filename
+          }`;
+        }
+        const updatePost = "UPDATE Posts SET message=? WHERE id=? ;";
+        const queryParam = [message, postId];
+        db.query(updatePost, queryParam, function (err, result) {
+          if (err) {
+            return res
+              .status(httpStatus.NOT_FOUND)
+              .json({ message: "Post non trouvé " });
+          } else {
+            return res.status(httpStatus.OK).json({ message: "Post modifié" });
+          }
+        });
+      } else {
+        return res.status(httpStatus.UNAUTHORIZED).json({
+          message:
+            "impossible de modifier un post créé par un autre utilisateur",
+        });
+      }
+    }
+  );
+};

@@ -8,5 +8,6 @@ const likeCtrl = require("../controllers/like");
 
 /* POST */
 router.post("/", auth, multer, postCtrl.createPost);
+router.put("/:id", auth, multer, postCtrl.modifyPost);
 
 module.exports = router;
