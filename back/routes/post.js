@@ -20,4 +20,7 @@ router.put("/:id_post/comment/:id", auth, multer, commentCtrl.modifyComment);
 router.delete("/:id_post/comment/:id", auth, commentCtrl.deleteComment);
 router.get("/:id_post/comments", auth, commentCtrl.getAllComments);
 
+/* LIKE */
+router.post("/:id_post/like", auth, likeCtrl.handleLikes);
+
 module.exports = router;
