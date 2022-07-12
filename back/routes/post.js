@@ -22,5 +22,6 @@ router.get("/:id_post/comments", auth, commentCtrl.getAllComments);
 
 /* LIKE */
 router.post("/:id_post/like", auth, likeCtrl.handleLikes);
+router.get("/:id_post/likes", auth, likeCtrl.getAllLikes);
 
 module.exports = router;
